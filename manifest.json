@@ -1,11 +1,9 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "asset-structure",
+	"name": "Asset Structure",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "Creates and manages an assets folder structure at the top level of the vault for pasted images. Pasted images will be put into folders under the assets folder corresponding to the document name they were pasted within.",
+	"author": "Samuel Hill",
 	"isDesktopOnly": false
 }
