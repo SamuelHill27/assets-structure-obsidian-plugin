@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, Events, Notice, MarkdownView, TFile } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Notice, MarkdownView, Editor, TFile } from 'obsidian';
 import { dirname, basename } from 'path';
 
 // Remember to rename these classes and interfaces!
@@ -21,7 +21,7 @@ export default class AssetsStructurePlugin extends Plugin {
 		this.registerEvent(
 			this.app.workspace.on("editor-paste", (evt: ClipboardEvent) => {
 				if (!evt.defaultPrevented) {
-					new Notice("DEBUG: Asset Structure plugin paste event handler called");
+					console.log("Clipboard data items greater than 1?");
 					this.handlePaste(evt);
 				}
 			})
@@ -37,54 +37,55 @@ export default class AssetsStructurePlugin extends Plugin {
 		});
 	}
 
-	onunload() {
-
-	}
-
 	async handlePaste(evt: ClipboardEvent) {
-		const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
+		const editor: Editor | undefined = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
 		if (!editor) {
 			new Notice("ERROR: Cannot get markdown view editor");
 			return;
-		};
+		}
 
-		const items = evt.clipboardData?.items;
+		const items: DataTransferItemList | undefined = evt.clipboardData?.items;
 		if (!items) {
 			new Notice("ERROR: Cannot get clipboard items");
 			return;
-		};
-
-		if (items.length > 1) {
-			new Notice("DEBUG: Clipboard data items greater than 1?");
 		}
 
-		const file = items[0].getAsFile();
+		if (items.length > 1) {
+			console.log("Clipboard data items greater than 1?");
+		}
+
+		const file: File | null = items[0].getAsFile();
 		if (!file) {
 			return;
 		}
 
-		await this.handleFilePaste(file);
-
 		evt.preventDefault();
+
+		await this.handleFilePaste(file, editor);
 	}
 
-	async handleFilePaste(file: File) {
-		const currentNote = this.app.workspace.activeEditor?.file;
+	async handleFilePaste(file: File, editor: Editor) {
+		const currentNote: TFile | null | undefined = this.app.workspace.activeEditor?.file;
 		if (!currentNote) {
 			new Notice( "ERROR: Cannot retrieve current note");
 			return;
 		}
 
-		const assetsFolderNoteDir = `/${DEFAULT_SETTINGS.assetsFolderName}/` + dirname(currentNote.path);
+		const assetsFolderNoteDir: string = `/${DEFAULT_SETTINGS.assetsFolderName}/` + dirname(currentNote.path);
 		try {
 			await this.app.vault.createFolder(assetsFolderNoteDir);
-		} catch (error) {
-			new Notice(error);
+		} catch {
+			console.log("Folder structure already exists");
 		}
 		
-		const assetsFolderNotePath = assetsFolderNoteDir + "/" + "pasted" + file.name;
-		new Notice(assetsFolderNotePath);
-		await this.app.vault.createBinary(assetsFolderNotePath, await file.arrayBuffer());
+		const assetsFolderNotePath: string = assetsFolderNoteDir + "/" + "pasted" + Math.floor(Math.random() * 100000) + file.name;
+		try {
+			await this.app.vault.createBinary(assetsFolderNotePath, await file.arrayBuffer());
+		} catch {
+			console.log(`File ${basename(assetsFolderNotePath)} already exists`);
+		}
+
+		editor.replaceRange(`![[${basename(assetsFolderNotePath)}]]`, editor.getCursor());
 	}
 
 	async loadSettings() {
